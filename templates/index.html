@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>yt-dlp-downloader</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    padding: 20px;
+}
+
+.card {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 10px;
+    width: 60%;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    background: #22c55e;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #16a34a;
+}
+
+#progressBar {
+    width: 100%;
+    background: #334155;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+#progress {
+    height: 20px;
+    width: 0%;
+    background: #22c55e;
+    border-radius: 10px;
+}
+
+.thumbnail {
+    width: 200px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="card">
+<h2>YT-DLP Downloader</h2>
+
+<input id="url" placeholder="Paste URL" onblur="loadPreview()">
+<br><br>
+
+<select id="mode">
+    <option value="video">Video</option>
+    <option value="audio">MP3</option>
+</select>
+
+<button onclick="startDownload()">Download</button>
+<button onclick="openFolder()">📂 Open Folder</button>
+
+<div id="preview"></div>
+
+<div id="progressBar">
+    <div id="progress"></div>
+</div>
+
+<p id="stats"></p>
+</div>
+
+<div class="card">
+<h3>Logs</h3>
+<pre id="log" style="height:200px;overflow:auto;"></pre>
+</div>
+
+<div class="card">
+<h3>History</h3>
+<ul id="history"></ul>
+</div>
+
+<script>
+function loadPreview() {
+    const url = document.getElementById("url").value;
+
+    fetch(`/preview?url=${encodeURIComponent(url)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.thumbnail) {
+            document.getElementById("preview").innerHTML =
+                `<h4>${data.title}</h4>
+                 <img src="${data.thumbnail}" class="thumbnail">`;
+        }
+    });
+}
+
+function startDownload() {
+    const url = document.getElementById("url").value;
+    const mode = document.getElementById("mode").value;
+
+    const log = document.getElementById("log");
+    log.innerText = "";
+
+    const evtSource = new EventSource(`/download?url=${encodeURIComponent(url)}&mode=${mode}`);
+
+    evtSource.onmessage = function(event) {
+        const data = event.data;
+
+        if (data.startsWith("PROGRESS:")) {
+            const parts = data.replace("PROGRESS:", "").split("|");
+
+            const percent = parts[0].replace("%","").trim();
+            const size = parts[1];
+            const speed = parts[2];
+
+            document.getElementById("progress").style.width = percent + "%";
+            document.getElementById("stats").innerText =
+                `${percent}% | ${size} | ${speed}`;
+        }
+        else if (data.startsWith("LOG|")) {
+            log.innerText += data.replace("LOG|","") + "\n";
+        }
+        else if (data === "DONE") {
+            log.innerText += "\n✅ Done\n";
+            evtSource.close();
+            loadHistory();
+        }
+    };
+}
+
+function openFolder() {
+    fetch("/open-folder");
+}
+
+function openFile(file) {
+    fetch(`/open-file?file=${encodeURIComponent(file)}`);
+}
+
+function loadHistory() {
+    fetch("/history")
+    .then(res => res.json())
+    .then(data => {
+        const list = document.getElementById("history");
+        list.innerHTML = "";
+
+        data.forEach(item => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${item.file} (${item.time})
+                <button onclick="openFile('${item.file}')">Open</button>
+            `;
+            list.appendChild(li);
+        });
+    });
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>
