@@ -25,9 +25,12 @@ def save_history(entry):
 
 
 def get_history():
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, "r") as f:
-            return json.load(f)
+    try:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, "r") as f:
+                return json.load(f)
+    except:
+        return []
     return []
 
 
@@ -149,3 +152,4 @@ def download():
 
 if __name__ == "__main__":
     app.run(debug=True)
+    os.makedirs(DOWNLOAD_PATH, exist_ok=True)
