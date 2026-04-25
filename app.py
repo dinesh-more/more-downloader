@@ -6,9 +6,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-// For local development, you can set this to any folder you want
+# For local development, you can set this to any folder you want
 # DOWNLOAD_PATH = "/Users/dineshmore/yt-dlp-video-downloader"
-// For Docker, we will use the /downloads folder inside the container
+# For Docker, we will use the /downloads folder inside the container
 DOWNLOAD_PATH = "/downloads"
 HISTORY_FILE = "history.json"
 
