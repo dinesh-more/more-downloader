@@ -62,3 +62,15 @@ li {
     border-radius: 8px;
     margin-bottom: 10px;
 }
+
+#log {
+    height: 200px;          /* fixed height */
+    overflow-y: auto;       /* scroll vertically */
+    overflow-x: auto;       /* scroll horizontally if needed */
+    white-space: pre-wrap;  /* wrap long lines */
+    word-break: break-word; /* break long filenames */
+    background: #020617;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+}

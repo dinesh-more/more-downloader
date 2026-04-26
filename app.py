@@ -66,7 +66,7 @@ def get_files_from_download_folder():
     if not os.path.exists(DOWNLOAD_PATH):
         return files
 
-    allowed_ext = (".mp4", ".mp3", ".mkv")
+    allowed_ext = (".mp4", ".mp3")
 
     for f in os.listdir(DOWNLOAD_PATH):
         # ❌ skip temp files
@@ -91,6 +91,7 @@ def get_files_from_download_folder():
                 "size": f"{round(size / (1024*1024), 2)} MB"
             })
 
+    print(f"File Names in Download Folder: {[f['file'] for f in files]}")  # Debugging line
     return files
 
 

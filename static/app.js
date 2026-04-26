@@ -37,7 +37,7 @@ function startDownload() {
                 `${percent}% | ${size} | ${speed}`;
         }
         else if (data.startsWith("LOG|")) {
-            log.innerText += data.replace("LOG|","") + "\n";
+            appendLog(data.replace("LOG|",""));
         }
         else if (data === "DONE") {
             log.innerText += "\n✅ Done\n";
@@ -70,6 +70,14 @@ function loadHistory() {
             list.appendChild(li);
         });
     });
+}
+
+function appendLog(text) {
+    const log = document.getElementById("log");
+    log.innerText += text + "\n";
+
+    // auto scroll to bottom
+    log.scrollTop = log.scrollHeight;
 }
 
 loadHistory();
