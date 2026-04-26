@@ -1,25 +1,29 @@
-from flask import Flask, render_template, request, Response, jsonify
+from flask import Flask, render_template, request, Response, jsonify, send_from_directory
 import subprocess
 import os
 import json
 from datetime import datetime
+import platform
+
 
 app = Flask(__name__)
 
-# For local development, you can set this to any folder you want
-# DOWNLOAD_PATH = "/Users/dineshmore/yt-dlp-video-downloader"
-# For Docker, we will use the /downloads folder inside the container
-DOWNLOAD_PATH = "/downloads"
-HISTORY_FILE = "history.json"
+#export DOWNLOAD_PATH=/Users/dineshmore/yt-dlp-video-downloader
+DOWNLOAD_PATH = os.environ.get("DOWNLOAD_PATH", "/downloads")
+HISTORY_FILE = os.path.join(DOWNLOAD_PATH, "history.json")
+
+os.makedirs(DOWNLOAD_PATH, exist_ok=True)
 
 
 # ---------- Helpers ----------
 def save_history(entry):
+    data = []
     if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, "r") as f:
-            data = json.load(f)
-    else:
-        data = []
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                data = json.load(f)
+        except:
+            data = []
 
     data.insert(0, entry)
 
@@ -28,12 +32,12 @@ def save_history(entry):
 
 
 def get_history():
-    try:
-        if os.path.exists(HISTORY_FILE):
+    if os.path.exists(HISTORY_FILE):
+        try:
             with open(HISTORY_FILE, "r") as f:
                 return json.load(f)
-    except:
-        return []
+        except:
+            return []
     return []
 
 
@@ -48,21 +52,6 @@ def history():
     return jsonify(get_history())
 
 
-@app.route("/open-folder")
-def open_folder():
-    subprocess.Popen(["open", DOWNLOAD_PATH])
-    return "OK"
-
-
-@app.route("/open-file")
-def open_file():
-    file = request.args.get("file")
-    if file:
-        subprocess.Popen(["open", os.path.join(DOWNLOAD_PATH, file)])
-    return "OK"
-
-
-# 🔥 Thumbnail + title API
 @app.route("/preview")
 def preview():
     url = request.args.get("url")
@@ -94,11 +83,6 @@ def download():
         "yt-dlp",
         "--newline",
         "--no-warnings",
-        # "--cookies-from-browser", "brave",
-        "--js-runtimes", "node",
-        "--remote-components", "ejs:github",
-
-        # ✅ Accurate progress
         "--progress-template",
         "PROGRESS:%(progress._percent_str)s|%(progress._total_bytes_str)s|%(progress._speed_str)s"
     ]
@@ -153,10 +137,27 @@ def download():
     return Response(generate(), mimetype='text/event-stream')
 
 
-# if __name__ == "__main__":
-#     app.run(debug=True)
-#     os.makedirs(DOWNLOAD_PATH, exist_ok=True)
+@app.route("/download-file")
+def download_file():
+    file = request.args.get("file")
+    return send_from_directory(DOWNLOAD_PATH, file, as_attachment=True)
+
+
+# Optional: local-only folder open
+@app.route("/open-folder")
+def open_folder():
+    system = platform.system()
+
+    if system == "Darwin":  # Mac
+        subprocess.Popen(["open", DOWNLOAD_PATH])
+    elif system == "Windows":
+        subprocess.Popen(["explorer", DOWNLOAD_PATH])
+    elif system == "Linux":
+        subprocess.Popen(["xdg-open", DOWNLOAD_PATH])
+
+    return "OK"
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)

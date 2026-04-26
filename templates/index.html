@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>more-downloader</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>More Downloader</title>
 
 <style>
 body {
     font-family: Arial;
     background: #0f172a;
     color: white;
-    padding: 20px;
+    padding: 15px;
 }
 
 .card {
     background: #1e293b;
-    padding: 20px;
+    padding: 15px;
     border-radius: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+
+h2, h3 {
+    margin-top: 0;
 }
 
 input, select {
-    padding: 10px;
-    width: 60%;
+    padding: 12px;
+    width: 100%;
     border-radius: 8px;
     border: none;
+    margin-bottom: 10px;
 }
 
 button {
-    padding: 10px 15px;
+    padding: 12px;
     border-radius: 8px;
     border: none;
     background: #22c55e;
     color: white;
     cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
 }
 
 button:hover {
@@ -53,28 +62,34 @@ button:hover {
 }
 
 .thumbnail {
-    width: 200px;
+    width: 100%;
+    max-width: 300px;
     border-radius: 10px;
     margin-top: 10px;
 }
-</style>
 
+li {
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+</style>
 </head>
+
 <body>
 
 <div class="card">
-<h2>More Downloader</h2>
+<h2>🚀 More Downloader</h2>
 
 <input id="url" placeholder="Paste URL" onblur="loadPreview()">
-<br><br>
 
 <select id="mode">
-    <option value="video">Video</option>
-    <option value="audio">MP3</option>
+    <option value="video">🎥 Video</option>
+    <option value="audio">🎧 MP3</option>
 </select>
 
-<button onclick="startDownload()">Download</button>
-<button onclick="openFolder()">📂 Open Folder</button>
+<button onclick="startDownload()">⬇ Start Download</button>
 
 <div id="preview"></div>
 
@@ -86,18 +101,20 @@ button:hover {
 </div>
 
 <div class="card">
-<h3>Logs</h3>
+<h3>📜 Logs</h3>
 <pre id="log" style="height:200px;overflow:auto;"></pre>
 </div>
 
 <div class="card">
-<h3>History</h3>
+<h3>📂 History</h3>
 <ul id="history"></ul>
 </div>
 
 <script>
 function loadPreview() {
     const url = document.getElementById("url").value;
+
+    if (!url) return;
 
     fetch(`/preview?url=${encodeURIComponent(url)}`)
     .then(res => res.json())
@@ -144,12 +161,8 @@ function startDownload() {
     };
 }
 
-function openFolder() {
-    fetch("/open-folder");
-}
-
-function openFile(file) {
-    fetch(`/open-file?file=${encodeURIComponent(file)}`);
+function downloadFile(file) {
+    window.open(`/download-file?file=${encodeURIComponent(file)}`, "_blank");
 }
 
 function loadHistory() {
@@ -161,10 +174,13 @@ function loadHistory() {
 
         data.forEach(item => {
             const li = document.createElement("li");
+
             li.innerHTML = `
-                ${item.file} (${item.time})
-                <button onclick="openFile('${item.file}')">Open</button>
+                <div><b>${item.file}</b></div>
+                <div>${item.time}</div>
+                <button onclick="downloadFile('${item.file}')">⬇ Download File</button>
             `;
+
             list.appendChild(li);
         });
     });
