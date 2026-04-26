@@ -2,15 +2,27 @@ from flask import Flask, render_template, request, Response, jsonify, send_from_
 import subprocess
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import platform
 
 app = Flask(__name__)
 
-DOWNLOAD_PATH = os.environ.get("DOWNLOAD_PATH", "/downloads")
-HISTORY_FILE = os.path.join(DOWNLOAD_PATH, "history.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DOWNLOAD_PATH = os.path.join(BASE_DIR, "downloads")
+HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
+
+# Create downloads folder
+os.makedirs(DOWNLOAD_PATH, exist_ok=True)
+
+# Create history.json if not exists
+if not os.path.exists(HISTORY_FILE):
+    with open(HISTORY_FILE, "w") as f:
+        json.dump([], f)
 
 os.makedirs(DOWNLOAD_PATH, exist_ok=True)
+
+AUTO_DELETE_MINUTES = 60
 
 
 # ---------- Helpers ----------
@@ -29,14 +41,40 @@ def save_history(entry):
         json.dump(data[:20], f, indent=2)
 
 
+def cleanup_old_files():
+    now = datetime.now()
+
+    for f in os.listdir(DOWNLOAD_PATH):
+        if f.endswith(".part"):
+            continue
+
+        full_path = os.path.join(DOWNLOAD_PATH, f)
+
+        if os.path.isfile(full_path):
+            file_time = datetime.fromtimestamp(os.path.getmtime(full_path))
+
+            if now - file_time > timedelta(minutes=AUTO_DELETE_MINUTES):
+                try:
+                    os.remove(full_path)
+                except:
+                    pass
+
+
 def get_files_from_download_folder():
     files = []
 
     if not os.path.exists(DOWNLOAD_PATH):
         return files
 
+    allowed_ext = (".mp4", ".mp3", ".mkv")
+
     for f in os.listdir(DOWNLOAD_PATH):
+        # ❌ skip temp files
         if f.endswith(".part"):
+            continue
+
+        # ❌ skip non-media files
+        if not f.lower().endswith(allowed_ext):
             continue
 
         full_path = os.path.join(DOWNLOAD_PATH, f)
@@ -57,6 +95,8 @@ def get_files_from_download_folder():
 
 
 def get_history():
+    cleanup_old_files()
+
     history = []
 
     if os.path.exists(HISTORY_FILE):
@@ -67,15 +107,13 @@ def get_history():
             history = []
 
     folder_files = get_files_from_download_folder()
-
-    existing_files = {item["file"] for item in history}
+    existing = {item["file"] for item in history}
 
     for file in folder_files:
-        if file["file"] not in existing_files:
+        if file["file"] not in existing:
             history.append(file)
 
-    # ✅ sort using timestamp
-    history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    history.sort(key=lambda x: x["time"], reverse=True)
 
     return history[:20]
 
@@ -91,20 +129,28 @@ def history():
     return jsonify(get_history())
 
 
+@app.route("/delete-file")
+def delete_file():
+    file = request.args.get("file")
+    path = os.path.join(DOWNLOAD_PATH, file)
+
+    if os.path.exists(path):
+        os.remove(path)
+        return "Deleted"
+
+    return "Not found", 404
+
+
 @app.route("/preview")
 def preview():
     url = request.args.get("url")
 
-    cmd = [
-        "yt-dlp",
-        "--dump-json",
-        "--skip-download",
-        url
-    ]
+    cmd = ["yt-dlp", "--dump-json", "--skip-download", url]
 
     try:
         result = subprocess.check_output(cmd, text=True)
         data = json.loads(result)
+
         return jsonify({
             "title": data.get("title"),
             "thumbnail": data.get("thumbnail")

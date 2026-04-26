@@ -73,4 +73,6 @@ docker build -t more-downloader .
 ## 🧪 Run Locally
 
 ```bash
-docker run -p 5000:5000 -v $(pwd)/downloads:/downloads more-downloader
+docker run -p 5000:5000 -v $(pwd)/downloads:/Downloads
+```
+
