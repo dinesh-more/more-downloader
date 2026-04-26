@@ -91,30 +91,41 @@ def get_files_from_download_folder():
                 "size": f"{round(size / (1024*1024), 2)} MB"
             })
 
-    print(f"File Names in Download Folder: {[f['file'] for f in files]}")  # Debugging line
     return files
 
 
 def get_history():
     cleanup_old_files()
 
+    allowed_ext = (".mp4", ".mp3")
+
     history = []
 
+    # Load history.json
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, "r") as f:
-                history = json.load(f)
+                raw_history = json.load(f)
+
+                # ✅ FILTER HERE ALSO
+                history = [
+                    item for item in raw_history
+                    if item.get("file", "").lower().endswith(allowed_ext)
+                ]
         except:
             history = []
 
+    # Load actual files
     folder_files = get_files_from_download_folder()
+
     existing = {item["file"] for item in history}
 
     for file in folder_files:
         if file["file"] not in existing:
             history.append(file)
 
-    history.sort(key=lambda x: x["time"], reverse=True)
+    # ✅ sort using timestamp (better than string time)
+    history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
 
     return history[:20]
 
