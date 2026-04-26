@@ -21,16 +21,17 @@ def get_user_download_path():
 
 def get_user_history_file():
     user_id = get_user_id()
-    path = os.path.join(BASE_DIR, f"history_{user_id}.json")
+
+    history_dir = os.path.join(BASE_DIR, "history")   # ✅ folder
+    os.makedirs(history_dir, exist_ok=True)
+
+    path = os.path.join(history_dir, f"history_{user_id}.json")  # ✅ file
 
     if not os.path.exists(path):
         with open(path, "w") as f:
             json.dump([], f)
 
     return path
-
-
-
 
 
 # ---------- Helpers ----------
@@ -154,8 +155,6 @@ def index():
 
 @app.route("/history")
 def history():
-    print("get_user_download_path: "+get_user_download_path())
-    print("get_user_history_file: "+get_user_history_file())
     return jsonify(get_history())
 
 
@@ -245,7 +244,7 @@ def download():
         process.wait()
 
         if process.returncode == 0:
-            history_file = os.path.join(BASE_DIR, f"history_{user_id}.json")  # ✅ no session call
+            history_file = os.path.join(BASE_DIR, "history", f"history_{user_id}.json")
 
             data = []
             if os.path.exists(history_file):
