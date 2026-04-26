@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>More Downloader</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>More Downloader</title>
 
-<link rel="stylesheet" href="/static/style.css">
+    <link href="/static/style.css" rel="stylesheet">
 </head>
 
 <body>
 
 <div class="card">
-<h2>🚀 More Downloader</h2>
+    <h2>🚀 More Downloader</h2>
 
-<input id="url" placeholder="Paste URL" onblur="loadPreview()">
+    <input id="url" onblur="loadPreview()" placeholder="Paste URL">
 
-<select id="mode">
-    <option value="video">🎥 Video</option>
-    <option value="audio">🎧 MP3</option>
-</select>
+    <select id="mode">
+        <option value="video">🎥 Video</option>
+        <option value="audio">🎧 MP3</option>
+    </select>
 
-<button onclick="startDownload()">⬇ Start Download</button>
+    <button onclick="startDownload()">⬇ Start Download</button>
 
-<div id="preview"></div>
+    <div id="preview"></div>
 
-<div id="progressBar">
-    <div id="progress"></div>
-</div>
+    <div id="progressBar">
+        <div id="progress"></div>
+    </div>
 
-<p id="stats"></p>
+    <p id="stats"></p>
 </div>
 
 <div class="card">
@@ -36,8 +36,8 @@
 </div>
 
 <div class="card">
-<h3>📂 History</h3>
-<ul id="history"></ul>
+    <h3>📂 History</h3>
+    <ul id="history"></ul>
 </div>
 
 <script src="/static/app.js"></script>
