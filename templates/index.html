@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>More Downloader</title>
 
 <style>
@@ -18,10 +17,6 @@ body {
     padding: 15px;
     border-radius: 12px;
     margin-bottom: 15px;
-}
-
-h2, h3 {
-    margin-top: 0;
 }
 
 input, select {
@@ -113,7 +108,6 @@ li {
 <script>
 function loadPreview() {
     const url = document.getElementById("url").value;
-
     if (!url) return;
 
     fetch(`/preview?url=${encodeURIComponent(url)}`)
@@ -177,8 +171,8 @@ function loadHistory() {
 
             li.innerHTML = `
                 <div><b>${item.file}</b></div>
-                <div>${item.time}</div>
-                <button onclick="downloadFile('${item.file}')">⬇ Download File</button>
+                <div>${item.time} | ${item.size || ""}</div>
+                <button onclick="downloadFile('${item.file}')">⬇ Download</button>
             `;
 
             list.appendChild(li);

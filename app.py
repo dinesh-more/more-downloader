@@ -5,10 +5,8 @@ import json
 from datetime import datetime
 import platform
 
-
 app = Flask(__name__)
 
-#export DOWNLOAD_PATH=/Users/dineshmore/yt-dlp-video-downloader
 DOWNLOAD_PATH = os.environ.get("DOWNLOAD_PATH", "/downloads")
 HISTORY_FILE = os.path.join(DOWNLOAD_PATH, "history.json")
 
@@ -31,14 +29,55 @@ def save_history(entry):
         json.dump(data[:20], f, indent=2)
 
 
+def get_files_from_download_folder():
+    files = []
+
+    if not os.path.exists(DOWNLOAD_PATH):
+        return files
+
+    for f in os.listdir(DOWNLOAD_PATH):
+        if f.endswith(".part"):
+            continue
+
+        full_path = os.path.join(DOWNLOAD_PATH, f)
+
+        if os.path.isfile(full_path):
+            size = os.path.getsize(full_path)
+
+            files.append({
+                "file": f,
+                "time": datetime.fromtimestamp(
+                    os.path.getmtime(full_path)
+                ).strftime("%Y-%m-%d %H:%M"),
+                "timestamp": os.path.getmtime(full_path),
+                "size": f"{round(size / (1024*1024), 2)} MB"
+            })
+
+    return files
+
+
 def get_history():
+    history = []
+
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, "r") as f:
-                return json.load(f)
+                history = json.load(f)
         except:
-            return []
-    return []
+            history = []
+
+    folder_files = get_files_from_download_folder()
+
+    existing_files = {item["file"] for item in history}
+
+    for file in folder_files:
+        if file["file"] not in existing_files:
+            history.append(file)
+
+    # ✅ sort using timestamp
+    history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+
+    return history[:20]
 
 
 # ---------- Routes ----------
@@ -128,7 +167,8 @@ def download():
         if process.returncode == 0:
             save_history({
                 "file": os.path.basename(filename) if filename else "Unknown",
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "timestamp": datetime.now().timestamp()
             })
             yield "data:DONE\n\n"
         else:
@@ -141,21 +181,6 @@ def download():
 def download_file():
     file = request.args.get("file")
     return send_from_directory(DOWNLOAD_PATH, file, as_attachment=True)
-
-
-# Optional: local-only folder open
-@app.route("/open-folder")
-def open_folder():
-    system = platform.system()
-
-    if system == "Darwin":  # Mac
-        subprocess.Popen(["open", DOWNLOAD_PATH])
-    elif system == "Windows":
-        subprocess.Popen(["explorer", DOWNLOAD_PATH])
-    elif system == "Linux":
-        subprocess.Popen(["xdg-open", DOWNLOAD_PATH])
-
-    return "OK"
 
 
 if __name__ == "__main__":
