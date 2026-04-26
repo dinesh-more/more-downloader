@@ -2,14 +2,22 @@ function loadPreview() {
     const url = document.getElementById("url").value;
     if (!url) return;
 
+    document.getElementById("preview").innerHTML = "";
+    document.getElementById("previewLoader").classList.remove("hidden");
+
     fetch(`/preview?url=${encodeURIComponent(url)}`)
     .then(res => res.json())
     .then(data => {
+        document.getElementById("previewLoader").classList.add("hidden");
+
         if (data.thumbnail) {
             document.getElementById("preview").innerHTML =
                 `<h4>${data.title}</h4>
                  <img src="${data.thumbnail}" class="thumbnail">`;
         }
+    })
+    .catch(() => {
+        document.getElementById("previewLoader").classList.add("hidden");
     });
 }
 
@@ -20,6 +28,12 @@ function startDownload() {
     const log = document.getElementById("log");
     log.innerText = "";
 
+    const btn = document.getElementById("downloadBtn");
+
+    btn.disabled = true;
+    document.getElementById("btnLoader").classList.remove("hidden");
+    document.getElementById("btnText").innerText = "Downloading...";
+    
     const evtSource = new EventSource(`/download?url=${encodeURIComponent(url)}&mode=${mode}`);
 
     evtSource.onmessage = function(event) {
@@ -43,6 +57,16 @@ function startDownload() {
             log.innerText += "\n✅ Done\n";
             evtSource.close();
             loadHistory();
+            stopButtonLoader();
+
+            document.getElementById("btnLoader").classList.add("hidden");
+            document.getElementById("btnText").innerText = "⬇ Start Download";
+
+            showToast("Download Complete ✅");
+        }
+        else if (data === "ERROR") {
+            stopButtonLoader();
+            showToast("Download Failed ❌");
         }
     };
 }
@@ -76,12 +100,42 @@ function loadHistory() {
     });
 }
 
+
 function appendLog(text) {
     const log = document.getElementById("log");
-    log.innerText += text + "\n";
 
-    // auto scroll to bottom
+    let span = document.createElement("div");
+
+    if (text.toLowerCase().includes("error")) {
+        span.className = "log-error";
+    } else if (text.toLowerCase().includes("downloaded") || text.toLowerCase().includes("%")) {
+        span.className = "log-success";
+    } else {
+        span.className = "log-info";
+    }
+
+    span.innerText = text;
+    log.appendChild(span);
+
     log.scrollTop = log.scrollHeight;
+}
+
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.innerText = message;
+    toast.classList.remove("hidden");
+
+    setTimeout(() => {
+        toast.classList.add("hidden");
+    }, 3000);
+}
+
+function stopButtonLoader() {
+    const btn = document.getElementById("downloadBtn");
+    btn.disabled = false;
+
+    document.getElementById("btnLoader").classList.add("hidden");
+    document.getElementById("btnText").innerText = "⬇ Start Download";
 }
 
 loadHistory();

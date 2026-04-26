@@ -19,9 +19,13 @@
         <option value="audio">🎧 MP3</option>
     </select>
 
-    <button onclick="startDownload()">⬇ Start Download</button>
-
+    <button id="downloadBtn" onclick="startDownload()">
+        <span id="btnText">⬇ Start Download</span>
+        <span id="btnLoader" class="btn-loader hidden"></span>
+    </button>
+ 
     <div id="preview"></div>
+    <div id="previewLoader" class="loader hidden"></div>
 
     <div id="progressBar">
         <div id="progress"></div>
@@ -42,5 +46,6 @@
 
 <script src="/static/app.js"></script>
 
+<div id="toast" class="toast hidden"></div>
 </body>
 </html>
