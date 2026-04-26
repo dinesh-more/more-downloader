@@ -94,7 +94,7 @@ def download():
         "yt-dlp",
         "--newline",
         "--no-warnings",
-        "--cookies-from-browser", "brave",
+        # "--cookies-from-browser", "brave",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
 
