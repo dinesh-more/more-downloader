@@ -1,54 +1,64 @@
-from flask import Flask, render_template, request, Response, jsonify, send_from_directory
+from flask import Flask, render_template, request, Response, jsonify, send_from_directory, session
 import subprocess
 import os
 import json
 from datetime import datetime, timedelta
 import platform
+import uuid
 
 app = Flask(__name__)
 
+AUTO_DELETE_MINUTES = 30
+app.secret_key = "more-downloader-secret-key"  
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DOWNLOAD_PATH = os.path.join(BASE_DIR, "downloads")
-HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
+def get_user_download_path():
+    user_id = get_user_id()
+    path = os.path.join(BASE_DIR, "downloads", user_id)
+    os.makedirs(path, exist_ok=True)
+    return path
 
-# Create downloads folder
-os.makedirs(DOWNLOAD_PATH, exist_ok=True)
 
-# Create history.json if not exists
-if not os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "w") as f:
-        json.dump([], f)
+def get_user_history_file():
+    user_id = get_user_id()
+    path = os.path.join(BASE_DIR, f"history_{user_id}.json")
 
-os.makedirs(DOWNLOAD_PATH, exist_ok=True)
+    if not os.path.exists(path):
+        with open(path, "w") as f:
+            json.dump([], f)
 
-AUTO_DELETE_MINUTES = 60
+    return path
+
+
+
 
 
 # ---------- Helpers ----------
 def save_history(entry):
+    history_file = get_user_history_file()
+
     data = []
-    if os.path.exists(HISTORY_FILE):
+    if os.path.exists(history_file):
         try:
-            with open(HISTORY_FILE, "r") as f:
+            with open(history_file, "r") as f:
                 data = json.load(f)
         except:
             data = []
 
     data.insert(0, entry)
 
-    with open(HISTORY_FILE, "w") as f:
+    with open(history_file, "w") as f:
         json.dump(data[:20], f, indent=2)
 
 
 def cleanup_old_files():
     now = datetime.now()
 
-    for f in os.listdir(DOWNLOAD_PATH):
+    for f in os.listdir(get_user_download_path()):
         if f.endswith(".part"):
             continue
 
-        full_path = os.path.join(DOWNLOAD_PATH, f)
+        full_path = os.path.join(get_user_download_path(), f)
 
         if os.path.isfile(full_path):
             file_time = datetime.fromtimestamp(os.path.getmtime(full_path))
@@ -63,12 +73,12 @@ def cleanup_old_files():
 def get_files_from_download_folder():
     files = []
 
-    if not os.path.exists(DOWNLOAD_PATH):
+    if not os.path.exists(get_user_download_path()):
         return files
 
     allowed_ext = (".mp4", ".mp3")
 
-    for f in os.listdir(DOWNLOAD_PATH):
+    for f in os.listdir(get_user_download_path()):
         # ❌ skip temp files
         if f.endswith(".part"):
             continue
@@ -77,7 +87,7 @@ def get_files_from_download_folder():
         if not f.lower().endswith(allowed_ext):
             continue
 
-        full_path = os.path.join(DOWNLOAD_PATH, f)
+        full_path = os.path.join(get_user_download_path(), f)
 
         if os.path.isfile(full_path):
             size = os.path.getsize(full_path)
@@ -102,9 +112,9 @@ def get_history():
     history = []
 
     # Load history.json
-    if os.path.exists(HISTORY_FILE):
+    if os.path.exists(get_user_history_file()):
         try:
-            with open(HISTORY_FILE, "r") as f:
+            with open(get_user_history_file(), "r") as f:
                 raw_history = json.load(f)
 
                 # ✅ FILTER HERE ALSO
@@ -130,6 +140,12 @@ def get_history():
     return history[:20]
 
 
+def get_user_id():
+    if "user_id" not in session:
+        session["user_id"] = str(uuid.uuid4())
+    return session["user_id"]
+
+
 # ---------- Routes ----------
 @app.route("/")
 def index():
@@ -138,13 +154,15 @@ def index():
 
 @app.route("/history")
 def history():
+    print("get_user_download_path: "+get_user_download_path())
+    print("get_user_history_file: "+get_user_history_file())
     return jsonify(get_history())
 
 
 @app.route("/delete-file")
 def delete_file():
     file = request.args.get("file")
-    path = os.path.join(DOWNLOAD_PATH, file)
+    path = os.path.join(get_user_download_path(), file)
 
     if os.path.exists(path):
         os.remove(path)
@@ -176,6 +194,10 @@ def download():
     url = request.args.get("url")
     mode = request.args.get("mode")
 
+    user_id = get_user_id()  # ✅ capture here
+    download_path = os.path.join(BASE_DIR, "downloads", user_id)
+    os.makedirs(download_path, exist_ok=True)
+
     base_cmd = [
         "yt-dlp",
         "--newline",
@@ -188,14 +210,14 @@ def download():
         cmd = base_cmd + [
             "--extract-audio",
             "--audio-format", "mp3",
-            "-o", f"{DOWNLOAD_PATH}/%(title)s.%(ext)s",
+            "-o", f"{download_path}/%(title)s.%(ext)s",
             url
         ]
     else:
         cmd = base_cmd + [
             "-f", "bv*+ba/b",
             "--merge-output-format", "mp4",
-            "-o", f"{DOWNLOAD_PATH}/%(title)s.%(ext)s",
+            "-o", f"{download_path}/%(title)s.%(ext)s",
             url
         ]
 
@@ -223,11 +245,25 @@ def download():
         process.wait()
 
         if process.returncode == 0:
-            save_history({
+            history_file = os.path.join(BASE_DIR, f"history_{user_id}.json")  # ✅ no session call
+
+            data = []
+            if os.path.exists(history_file):
+                try:
+                    with open(history_file, "r") as f:
+                        data = json.load(f)
+                except:
+                    data = []
+
+            data.insert(0, {
                 "file": os.path.basename(filename) if filename else "Unknown",
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "timestamp": datetime.now().timestamp()
             })
+
+            with open(history_file, "w") as f:
+                json.dump(data[:20], f, indent=2)
+
             yield "data:DONE\n\n"
         else:
             yield "data:ERROR\n\n"
@@ -238,7 +274,7 @@ def download():
 @app.route("/download-file")
 def download_file():
     file = request.args.get("file")
-    return send_from_directory(DOWNLOAD_PATH, file, as_attachment=True)
+    return send_from_directory(get_user_download_path(), file, as_attachment=True)
 
 
 if __name__ == "__main__":
