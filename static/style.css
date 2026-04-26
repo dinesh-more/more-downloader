@@ -242,3 +242,34 @@ li:hover {
     90% { opacity: 1; }
     100% { opacity: 0; transform: translateY(20px); }
 }
+
+.mode-selector {
+    display: flex;
+    gap: 10px;
+}
+
+.mode-card {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    background: #020617;
+    border: 1px solid #1e293b;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.mode-card small {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.mode-card:hover {
+    border-color: #ef4444;
+}
+
+.mode-card.active {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}

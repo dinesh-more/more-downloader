@@ -14,10 +14,19 @@
 
     <input id="url" onblur="loadPreview()" placeholder="Paste URL">
 
-    <select id="mode">
-        <option value="video">🎥 Video</option>
-        <option value="audio">🎧 MP3</option>
-    </select>
+    <div class="mode-selector">
+        <div class="mode-card active" data-mode="video">
+            🎥 Video
+            <small>HD • Best Quality</small>
+        </div>
+
+        <div class="mode-card" data-mode="audio">
+            🎧 Audio
+            <small>MP3 • Lightweight</small>
+        </div>
+    </div>
+
+    <input type="hidden" id="mode" value="video">
 
     <button id="downloadBtn" onclick="startDownload()">
         <span id="btnText">⬇ Start Download</span>

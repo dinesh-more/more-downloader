@@ -138,4 +138,13 @@ function stopButtonLoader() {
     document.getElementById("btnText").innerText = "⬇ Start Download";
 }
 
+document.querySelectorAll(".mode-card").forEach(card => {
+    card.onclick = () => {
+        document.querySelectorAll(".mode-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+
+        document.getElementById("mode").value = card.dataset.mode;
+    };
+});
+
 loadHistory();
