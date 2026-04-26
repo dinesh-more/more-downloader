@@ -60,12 +60,16 @@ function loadHistory() {
 
         data.forEach(item => {
             const li = document.createElement("li");
-
             li.innerHTML = `
                 <div><b>${item.file}</b></div>
-                <div>${item.time} | ${item.size || ""}</div>
-                <button onclick="downloadFile('${item.file}')">⬇ Download</button>
+                <div>${item.time}</div>
             `;
+
+            const btn = document.createElement("button");
+            btn.innerText = "⬇ Download";
+            btn.onclick = () => downloadFile(item.file);
+
+            li.appendChild(btn);
 
             list.appendChild(li);
         });
