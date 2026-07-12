@@ -21,6 +21,8 @@ function loadPreview() {
     });
 }
 
+let downloadedFileName = null;
+
 function startDownload() {
     const url = document.getElementById("url").value;
     const mode = document.getElementById("mode").value;
@@ -50,8 +52,11 @@ function startDownload() {
             document.getElementById("stats").innerText =
                 `${percent}% | ${size} | ${speed}`;
         }
+        else if (data.startsWith("FILE|")) {
+            downloadedFileName = data.replace("FILE|", "");
+        }
         else if (data.startsWith("LOG|")) {
-            appendLog(data.replace("LOG|",""));
+            appendLog(data.replace("LOG|", ""));
         }
         else if (data === "DONE") {
             log.innerText += "\n✅ Done\n";
@@ -61,6 +66,10 @@ function startDownload() {
 
             document.getElementById("btnLoader").classList.add("hidden");
             document.getElementById("btnText").innerText = "⬇ Start Download";
+
+            if (downloadedFileName) {
+                downloadFile(downloadedFileName);
+            }
 
             showToast("Download Complete ✅");
         }
@@ -72,7 +81,13 @@ function startDownload() {
 }
 
 function downloadFile(file) {
-    window.open(`/download-file?file=${encodeURIComponent(file)}`, "_blank");
+    const url = `/download-file?file=${encodeURIComponent(file)}`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 }
 
 function loadHistory() {

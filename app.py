@@ -235,6 +235,7 @@ def download():
 
             if "Destination:" in line:
                 filename = line.split("Destination:")[-1].strip()
+                yield f"data:FILE|{os.path.basename(filename)}\n\n"
 
             if line.startswith("PROGRESS:"):
                 yield f"data:{line}\n\n"
